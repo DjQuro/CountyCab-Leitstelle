@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stechuhr</title>
+    <!-- Hier Bootstrap-CDN oder lokal einbinden -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Stechuhr</h1>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-info">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <div class="row">
+            <div class="col-md-6">
+    {% if current_user.is_authenticated %}
+    <h3>Willkommen, {{ current_user.first_name }} {{ current_user.last_name }}!</h3>
+{% endif %}
+<p>Gesamtstunden diese Woche: {{ get_total_hours_this_week(current_user) }} Stunden</p>
+    <form method="POST" action="{{ url_for('stechuhr') }}">
+        {{ form.hidden_tag() }}
+        <button type="submit" class="btn btn-primary mt-3">Stempeln</button>
+    </form>
+</div>
+            <div class="col-md-6">
+                <table class="table mt-4">
+                    <thead>
+                        <tr>
+                            <th scope="col">Stempeltyp</th>
+                            <th scope="col">Zeitpunkt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stempel_event in stempel_events %}
+                            <tr>
+                                <td>{{ stempel_event.event_type }}</td>
+                                <td>{{ stempel_event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-MzMKCOwkMyD0LgqFDzJp9LJsApXadCBWr8PPIG3tzuU14g+Fzi1KSJvVVbNUf6da" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-dZJBRWb9h9zU0eDuo7C4FZd3yQ8f5Cv85dSiQTt92Cv6LZxYb1S4fTfb2jK30Pbo" crossorigin="anonymous"></script>
+</body>
+</html>
