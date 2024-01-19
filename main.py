@@ -8,13 +8,14 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, EqualTo
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dein_geheimer_schluessel'
+app.config['SECRET_KEY'] = 'B0T4X80C0UNTYC4B'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stechuhr.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
 
 class RegistrationForm(FlaskForm):
     username = StringField('Benutzername', validators=[DataRequired()])
@@ -24,6 +25,7 @@ class RegistrationForm(FlaskForm):
     last_name = StringField('Nachname', validators=[DataRequired()])
     submit = SubmitField('Registrieren')
 
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -31,16 +33,73 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
 
+
 class StempelEvent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     event_type = db.Column(db.String(20), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('stempel_events', lazy=True))
+
+
+class Redemption(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('redemptions', lazy=True))
+    item_name = db.Column(db.String(50), nullable=False)
+    redemption_time = db.Column(db.DateTime, nullable=True)
+
+
+class Rating(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('ratings', lazy=True))
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# 14. Einlösungen und Bewertungen - Beispielrouten
+@app.route('/redemptions')
+@login_required
+def redemptions():
+    if current_user.role not in ['management', 'owner']:
+        return redirect(url_for('dashboard'))
+
+    redemptions = Redemption.query.all()
+    return render_template('redemptions.html', redemptions=redemptions)
+
+
+@app.route('/ratings')
+@login_required
+def ratings():
+    if current_user.role not in ['management', 'owner']:
+        return redirect(url_for('dashboard'))
+
+    ratings = Rating.query.all()
+    return render_template('ratings.html', ratings=ratings)
+
+
+# 15. Archivierung alter Tabellen
+# class ArchivedStempelEvent(db.Model):
+
+# Beispielroute für das Archivieren
+@app.route('/archive_data', methods=['POST'])
+@login_required
+def archive_data():
+    if current_user.role not in ['management', 'owner']:
+        return redirect(url_for('dashboard'))
+
+    # Hier Daten aus den originalen Tabellen in die Archivtabellen verschieben
+
+    flash('Daten erfolgreich archiviert!', 'success')
+    return redirect(url_for('dashboard'))
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
 
 @app.route('/')
 def home():
@@ -79,6 +138,7 @@ def login():
             flash('Benutzer nicht gefunden', 'error')
             return redirect(url_for('login'))
 
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -86,6 +146,7 @@ def logout():
         logout_user()
         flash('Erfolgreich ausgeloggt!', 'success')
         return redirect(url_for('home'))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -106,10 +167,11 @@ def register():
 
         return render_template('register.html', form=form)
 
+
 @app.route('/stechuhr', methods=['GET', 'POST'])
 @login_required
 def stechuhr():
-    with app.app_context():
+    with (app.app_context()):
         stempel_events = StempelEvent.query.filter_by(user=current_user).all()
 
         form = RegistrationForm()
@@ -131,7 +193,7 @@ def stechuhr():
         total_hours_this_week = get_total_hours_this_week(current_user)
 
         return render_template('stechuhr.html', stempel_events=stempel_events,
-                               total_hours_this_week=total_hours_this_week,
+                               total_hours_this_week=round(total_hours_this_week, 2),
                                get_total_hours_this_week=get_total_hours_this_week, form=form)
 
 
@@ -149,6 +211,7 @@ def get_total_hours_this_week(user):
                       for index, event in enumerate(stempel_events) if index > 0 and event.event_type == 'Stempeln')
 
     return total_hours
+
 
 if __name__ == '__main__':
     with app.app_context():
