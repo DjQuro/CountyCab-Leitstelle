@@ -34,7 +34,9 @@
 <p>Gesamtstunden diese Woche: {{ get_total_hours_this_week(current_user) }} Stunden</p>
     <form method="POST" action="{{ url_for('stechuhr') }}">
         {{ form.hidden_tag() }}
-        <button type="submit" class="btn btn-primary mt-3">Stempeln</button>
+        <button type="submit" name="einstempeln" class="btn btn-primary">Einstempeln</button>
+		<button type="submit" name="ausstempeln" class="btn btn-danger">Ausstempeln</button>
+		<p><a href="{{ url_for('logout') }}">Ausloggen</a></p>
     </form>
 </div>
             <div class="col-md-6">
